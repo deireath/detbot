@@ -4,3 +4,6 @@
 .vscode/
 __pycache__/
 .pylintrc
+.redis_data/
+.postgres_data/
+.pgadmin_data/
