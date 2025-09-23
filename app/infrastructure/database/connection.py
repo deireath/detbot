@@ -14,7 +14,7 @@ def build_pg_conninfo(
         password:str
 ) -> str:
     conninfo = (
-        f"posgresql://{quote(user, safe='')}:{quote(password, safe='')}"
+        f"postgresql://{quote(user, safe='')}:{quote(password, safe='')}"
         f"@{host}:{port}/{db_name}"
     )
     logger.debug(f"Building PostgreSQL connection string (password omitted): "
@@ -37,15 +37,15 @@ async def get_pg_connection(
     user: str,
     password: str,
 ) -> AsyncConnection:
-    conninfo = build_pg_conninfo(db_name, host, post, user, password)
+    conninfo = build_pg_conninfo(db_name, host, port, user, password)
     connection: AsyncConnection | None = None
 
     try:
-        connection = await AsyncCennection.connect(conninfo=conninfo)
+        connection = await AsyncConnection.connect(conninfo=conninfo)
         await log_db_version(connection)
         return connection
-    except Exeption as e:
-        logger.exeption("Failed to connect to PestgreSQL: %s", e)
+    except Exception as e:
+        logger.exception("Failed to connect to PostgreSQL: %s", e)
         if connection:
             await connection.close()
         raise

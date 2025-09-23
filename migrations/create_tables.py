@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 
-from app.insfrastructure.database.connection import get_pg_connection
+from app.infrastructure.database.connection import get_pg_connection
 from config.config import Config, load_config
 from psycopg import AsyncConnection, Error
 
@@ -40,7 +40,7 @@ async def main():
                             user_id BIGINT NOT NULL UNIQUE,
                             username VARCHAR(50),
                             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                            role VARCHAR(30) NOT NULL,
+                            role VARCHAR(30) NOT NULL
                             );
                         """
                     )

@@ -1,7 +1,7 @@
 import asyncio
 import logging
-import os 
-import sys 
+import os
+import sys
 
 from app.bot import main
 from config.config import Config, load_config
