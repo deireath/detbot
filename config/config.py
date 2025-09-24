@@ -42,7 +42,7 @@ class Config:
 def load_config(path: str | None = None) -> Config:
     env = Env()
 
-    if path: 
+    if path:
         if not os.path.exists(path):
             logger.warning(".env file not found at '%s', skipping...", path)
         else:
@@ -55,9 +55,9 @@ def load_config(path: str | None = None) -> Config:
     if not token:
         raise ValueError("BOT_TOKEN must not be empty")
     
-    raw_ids = env.list("ADMIN_IDS", defaul =[])
+    raw_ids = env.list("ADMIN_IDS", default =[])
 
-    try: 
+    try:
         admin_ids = [int(x) for x in raw_ids]
     except ValueError as e:
         raise ValueError(f"ADMIN_IDS must be integers, got: {raw_ids}") from e

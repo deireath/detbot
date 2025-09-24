@@ -3,18 +3,18 @@ from typing import Any, Awaitable, Callable
 
 from aiogram import BaseMiddleware
 from aiogram.types import Update
-from psycopg_pool import AcyncConnection
+from psycopg_pool import AsyncConnectionPool
 
 logger = logging.getLogger(__name__)
 
 class  DataBaseMiddleware(BaseMiddleware):
     async def __call__(
         self,
-        handler: Callable[Update, dict[str, Any], Awaitable[Any]],
+        handler: Callable[[Update, dict[str, Any]], Awaitable[Any]],
         event: Update,
         data: dict[str, Any],
     ) -> Any:
-        dp_pool: AsyncConnectionPool = data.get('db_pool')
+        db_pool: AsyncConnectionPool = data.get('db_pool')
 
         if db_pool is None:
             logger.error('Database pool is not provided in middleware data')

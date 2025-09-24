@@ -3,7 +3,7 @@ from aiogram.types import CallbackQuery, Message
 from psycopg import AsyncConnection
 
 from app.bot.enums.roles import UserRole
-from app.infrastructure.batabase.db import get_user_role
+from app.infrastructure.database.db import get_user_role
 
 class UserRoleFilter(BaseFilter):
     def __init__(self, *roles: str | UserRole):
@@ -23,7 +23,7 @@ class UserRoleFilter(BaseFilter):
         if not user:
             return False
 
-        role = await get_user_role(conn, user_id = user_id)
+        role = await get_user_role(conn, user_id = user.id)
         if role is None:
             return False
 

@@ -1,9 +1,9 @@
 import logging 
 from datetime import datetime, timezone
 from typing import Any
+from psycopg import AsyncConnection
 
 from app.bot.enums.roles import UserRole
-from psycopg import AsyncConnection
 
 logger = logging.getLogger(__name__)
 
