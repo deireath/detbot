@@ -44,6 +44,39 @@ async def main():
                             );
                         """
                     )
+                    await cursor.execute(
+                        query="""
+                            CREATE TABLE IF NOT EXISTS places(
+                            id SERIAL PRIMARY KEY,
+                            tag VARCHAR(50),
+                            district VARCHAR(10),
+                            number INT,
+                            name VARCHAR(50),
+                            answer TEXT,
+                            papka INT,
+                            CONSTRAINT places_uq UNIQUE (district, number)
+                            );
+                        """
+                    )
+                    await cursor.execute(
+                        query="""
+                            CREATE TABLE IF NOT EXISTS teams(
+                            id SERIAL PRIMARY KEY,
+                            team INT,
+                            role VARCHAR(30),
+                            travels INT
+                            );
+                        """
+                    )
+                    await cursor.execute(
+                        query="""
+                            CREATE TABLE IF NOT EXISTS results(
+                            id INT,
+                            team INT,
+                            clue INT
+                            );
+                        """
+                    )
                 logger.info("Table 'user' were successfully created")
     except Error as db_error:
         logger.exception("Database-specific error: %s", db_error)

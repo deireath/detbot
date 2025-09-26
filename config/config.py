@@ -33,11 +33,27 @@ class LogSettings:
     format: str
 
 @dataclass
+class GoogleSettings:
+    sa_json_path: str
+    sources_path: str | None
+    sync_path: str | None
+
+
+@dataclass 
+class SheetsFlags:
+    import_on_start: bool
+    import_interval_min: int
+    sync_on_start: bool
+    sync_interval_min: int
+
+@dataclass
 class Config:
     bot: BotSettings
     db: DatabaseSettings
     redis: RedisSettings
     log: LogSettings
+    google: GoogleSettings
+    sheets: SheetsFlags
 
 def load_config(path: str | None = None) -> Config:
     env = Env()
@@ -62,6 +78,8 @@ def load_config(path: str | None = None) -> Config:
     except ValueError as e:
         raise ValueError(f"ADMIN_IDS must be integers, got: {raw_ids}") from e
     
+    sa_json_path = env("SA_JSON_PATH")
+    
     db = DatabaseSettings(
         name=env("POSTGRES_DB"),
         host=env("POSTGRES_HOST"),
@@ -80,7 +98,20 @@ def load_config(path: str | None = None) -> Config:
     
     logg_settings = LogSettings(
         level=env("LOG_LEVEL"),
-        format=env("LOG_FORMAT")
+        format=env("LOG_FORMAT"),
+    )
+
+    google = GoogleSettings(
+        sa_json_path=sa_json_path,
+        sources_path=env("GSHEETS_SOURCES_PATH", default=None),
+        sync_path=env("GSHEETS_SYNC_PATH", default=None),
+    )
+
+    sheets = SheetsFlags(
+        import_on_start=env.bool("SHEETS_SYNC_ON_START", default=False),
+        import_interval_min= env.int("SHEETS_IMPORT_INTERVAL_MIN", default=0),
+        sync_on_start=env.bool("SHEETS_SYNC_ON_START", default=False),
+        sync_interval_min=env.int("SHEETS_SYNC_INTERVAL_MIN", default=0),
     )
 
     logger.info("Configuration loaded successfully")
@@ -89,5 +120,8 @@ def load_config(path: str | None = None) -> Config:
         bot=BotSettings(token=token, admin_ids=admin_ids),
         db=db,
         redis=redis,
-        log=logg_settings
+        log=logg_settings,
+        google=google,
+        sheets=sheets
     )
+    

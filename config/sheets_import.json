@@ -1,0 +1,28 @@
+{
+  "sources": [
+    {
+      "spreadsheet_id": "1rZco_HvRwozjIBgx4owA4sbHCTw2VE_8_rLdm1rlrjM",
+      "worksheet": "Sheet2",
+      "range": "A:Z",
+      "table": "public.places",
+      "pk": ["district", "number"],
+      "columns": {
+        "tag": "tag",
+        "district": "district",
+        "number": "number",
+        "name": "name",
+        "answer": "answer",
+        "papka": "papka"
+      },
+      "casts": {
+        "tag": "text",
+        "district": "text",
+        "number": "int",
+        "name": "text",
+        "answer": "text",
+        "papka": "int"
+      },
+      "keep_on_empty": ["answer", "papka"]
+    }
+  ]
+}

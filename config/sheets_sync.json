@@ -1,0 +1,46 @@
+{
+    "entries":[
+        {
+            "mode": "push_full",
+            "spreadsheet_id": "1rZco_HvRwozjIBgx4owA4sbHCTw2VE_8_rLdm1rlrjM",
+            "worksheet": "Sheet1",
+            "table": "teams",
+            "select_sql":"SELECT team, role, id, travels FROM public.teams",
+            "sheet_columns": ["team", "role", "id", "travels"]
+    },
+    {
+        "mode": "pull_upsert",
+        "spreadsheet_id": "1rZco_HvRwozjIBgx4owA4sbHCTw2VE_8_rLdm1rlrjM",
+        "worksheet": "Sheet2",
+        "range": "A:Z",
+        "table": "public.places",
+        "pk": ["district", "number"],
+        "columns": {
+            "tag": "tag",
+            "district": "district",
+            "number": "number",
+            "name": "name",
+            "answer": "answer",
+            "papka": "papka"                
+        },
+        "casts": {
+            "tag": "text",
+            "district": "text",
+            "number": "int",
+            "name": "text",
+            "answer": "text",
+            "papka": "int" 
+        }
+    },
+    {
+        "mode": "push_partial",
+        "spreadsheet_id": "1rZco_HvRwozjIBgx4owA4sbHCTw2VE_8_rLdm1rlrjM",
+        "worksheet": "Sheet3",
+        "table": "results",
+        "key": ["id"],
+        "select_sql":"SELECT id, team, clue FROM public.results",
+        "write_columns": ["id", "team", "clue"],
+        "append_missing": true
+}
+    ]
+}
