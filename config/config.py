@@ -6,10 +6,11 @@ from environs import Env
 
 logger = logging.getLogger(__name__)
 
-@dataclass 
+@dataclass
 class BotSettings:
     token: str
     admin_ids: list[int]
+    admin_pass: int
 
 @dataclass
 class DatabaseSettings:
@@ -67,6 +68,7 @@ def load_config(path: str | None = None) -> Config:
     env.read_env(path)
 
     token = env("BOT_TOKEN")
+    admin_pass = env("ADMIN_PASS")
 
     if not token:
         raise ValueError("BOT_TOKEN must not be empty")
@@ -117,7 +119,7 @@ def load_config(path: str | None = None) -> Config:
     logger.info("Configuration loaded successfully")
 
     return Config(
-        bot=BotSettings(token=token, admin_ids=admin_ids),
+        bot=BotSettings(token=token, admin_ids=admin_ids, admin_pass=admin_pass),
         db=db,
         redis=redis,
         log=logg_settings,

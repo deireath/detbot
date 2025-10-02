@@ -5,8 +5,8 @@
             "spreadsheet_id": "1rZco_HvRwozjIBgx4owA4sbHCTw2VE_8_rLdm1rlrjM",
             "worksheet": "Sheet1",
             "table": "teams",
-            "select_sql":"SELECT team, role, id, travels FROM public.teams",
-            "sheet_columns": ["team", "role", "id", "travels"]
+            "select_sql":"SELECT team, role, user_id, travels FROM public.teams",
+            "sheet_columns": ["team", "role", "user_id", "travels"]
     },
     {
         "mode": "pull_upsert",
@@ -36,10 +36,10 @@
         "mode": "push_partial",
         "spreadsheet_id": "1rZco_HvRwozjIBgx4owA4sbHCTw2VE_8_rLdm1rlrjM",
         "worksheet": "Sheet3",
-        "table": "results",
-        "key": ["id"],
-        "select_sql":"SELECT id, team, clue FROM public.results",
-        "write_columns": ["id", "team", "clue"],
+        "table": "teams",
+        "key": ["team"],
+        "select_sql":"SELECT team, user_id, clue FROM public.teams",
+        "write_columns": ["team", "user_id", "clue"],
         "append_missing": true
 }
     ]

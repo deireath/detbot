@@ -28,3 +28,12 @@ class UserRoleFilter(BaseFilter):
             return False
 
         return role in self.roles
+
+
+class UnregisteredUserFilter(BaseFilter):
+    async def __call__(self, event: Message | CallbackQuery, conn: AsyncConnection):
+        user = event.from_user
+        if not user: 
+            return False
+        role = await get_user_role(conn, user_id = user.id)
+        return role is None

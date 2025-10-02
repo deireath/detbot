@@ -3,15 +3,17 @@ import asyncio
 from contextlib import suppress
 
 import psycopg_pool
+from redis.asyncio import Redis
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.fsm.storage.redis import RedisStorage
+from config.config import Config
 from app.bot.handlers.admin import admin_router
 from app.bot.handlers.user import user_router
 from app.bot.handlers.other import other_router
+from app.bot.handlers.registration import registration_router
 from app.bot.middlewares.database import DataBaseMiddleware
 from app.infrastructure.database.connection import get_pg_pool
-from config.config import Config
-from redis.asyncio import Redis
 from app.infrastructure.integration.sheets_import import import_all_from_config
 from app.infrastructure.integration.sheets_sync import sync_all
 
@@ -43,8 +45,18 @@ async def _periodic_worker(
 async def main(config: Config) -> None:
     logger.info('Starting bot...')
 
+    storage = RedisStorage(
+        redis=Redis(
+            host=config.redis.host,     
+            port=config.redis.port,
+            db=config.redis.db,
+            password=config.redis.password,
+            username=config.redis.username,
+        )
+    )
+
     bot = Bot(token=config.bot.token)
-    dp = Dispatcher()
+    dp = Dispatcher(storage=storage)
 
     db_pool: psycopg_pool.AsyncConnectionPool = await get_pg_pool(
         db_name=config.db.name,
@@ -55,6 +67,7 @@ async def main(config: Config) -> None:
     )
 
     logger.info('Including routers...')
+    dp.include_router(registration_router)
     dp.include_router(admin_router)
     dp.include_router(user_router)
     dp.include_router(other_router)
@@ -89,9 +102,8 @@ async def main(config: Config) -> None:
             logger.info("[sync] periodic worker started: every %s min", config.sheets.sync_interval_min)
 
         await dp.start_polling(
-            bot, 
+            bot,
             db_pool=db_pool,
-            admin_ids=config.bot.admin_ids
         )
     except Exception as e:
         logger.exception(e)

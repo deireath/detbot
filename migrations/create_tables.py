@@ -62,17 +62,10 @@ async def main():
                         query="""
                             CREATE TABLE IF NOT EXISTS teams(
                             id SERIAL PRIMARY KEY,
+                            user_id BIGINT NOT NULL UNIQUE,
                             team INT,
                             role VARCHAR(30),
-                            travels INT
-                            );
-                        """
-                    )
-                    await cursor.execute(
-                        query="""
-                            CREATE TABLE IF NOT EXISTS results(
-                            id INT,
-                            team INT,
+                            travels INT,
                             clue INT
                             );
                         """
