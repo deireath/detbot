@@ -1,4 +1,5 @@
-import asyncio, json
+import asyncio
+import json
 import logging
 from datetime import datetime
 from typing import Any
@@ -6,34 +7,31 @@ from config.config import load_config
 from app.infrastructure.integration.sheets_client import make_gspread_client_from_file, fetch_values
 from app.infrastructure.integration.bulk_upsert import bulk_upsert
 
+logger = logging.getLogger(__name__)
+
 def _norm(s: str) -> str:
-    return s.strip().lower().replace(" ","_")
+    return s.strip().lower().replace(" ", "_")
 
 def _cast(v: str | None, kind: str | None):
     if v is None or v == "":
         return None
     kind = (kind or "").lower()
-    if kind in ("int", "integer"):
-        try: 
+    try:
+        if kind in ("int", "integer"):
             return int(str(v).strip())
-        except: 
-            return None
-    if kind in ("float","numeric","double"):
-        try: 
+        if kind in ("float", "numeric", "double"):
             return float(str(v).replace(",", "."))
-        except:
-            return None
-    if kind in ("bool","boolean"):
-        return str(v).strip().lower() in {"1","true","yes","y","да","истина"}
-    if kind in ("datetime","timestamp"):
-        try:
+        if kind in ("bool", "boolean"):
+            return str(v).strip().lower() in {"1", "true", "yes", "y", "да", "истина"}
+        if kind in ("datetime", "timestamp"):
             return datetime.fromisoformat(str(v).strip())
-        except:
-            return None
+    except Exception:
+        return None
     return str(v)
 
-def _map_and_cast(header: list[str], row: list[str], col_map: dict[str,str], casts: dict[str,str]) -> dict[str, Any]:
-    src = { _norm(h): (row[i] if i < len(row) else None) for i, h in enumerate(header) }
+def _map_and_cast(header: list[str], row: list[str], col_map: dict[str, str], casts: dict[str, str]) -> dict[str, Any]:
+    # создаем словарь из заголовка и строки
+    src = {_norm(h): (row[i] if i < len(row) else None) for i, h in enumerate(header)}
     out: dict[str, Any] = {}
     for sheet_col, db_col in col_map.items():
         key = _norm(sheet_col)
@@ -63,36 +61,39 @@ async def import_all_from_config(pg_pool) -> list[tuple[str, int]]:
         rng: str = s.get("range", "A:Z")
         table: str = s["table"]
         pk: list[str] = s["pk"]
-        col_map: dict[str,str] = s.get("columns", {})
-        casts: dict[str,str] = s.get("casts", {})
+        col_map: dict[str, str] = s.get("columns", {})
+        casts: dict[str, str] = s.get("casts", {})
 
-
+        # получаем все значения из листа
         values = await loop.run_in_executor(None, lambda: fetch_values(client, spreadsheet_id, worksheet, rng))
         if not values:
             results.append((table, 0))
             continue
 
         header, *rows = values
-        header = [str(h) for h in header]
-        logger = logging.getLogger(__name__)
+        header = [str(h).strip() for h in header]
+
         logger.info("[pull_upsert] sheet=%s header=%s rows=%d", worksheet or "sheet1", header, len(rows))
 
+        # если колонки не заданы, создаем identity map
         if not col_map:
-            col_map = { h: _norm(h) for h in header }
+            col_map = {h: _norm(h) for h in header}
 
-        if not set(col_map.keys()).issubset(set(header)):
-            missing = set(col_map.keys()) - set(header)
-            raise RuntimeError(f"[{table}] Missing columns in sheet: {missing}")
+        # проверяем, есть ли колонки в листе
+        missing = set(col_map.keys()) - set(header)
+        if missing:
+            logger.warning("[%s] Missing columns in sheet: %s. They will be filled as None.", table, missing)
 
         prepared = []
-        skipped_empty_pk = 0 
+        skipped_empty_pk = 0
         for r in rows:
             d = _map_and_cast(header, r, col_map, casts)
+            # проверяем PK
             if any(d.get(k) in (None, "") for k in pk):
                 skipped_empty_pk += 1
-                continue
+                continue  # можно заменить на d[k] = None, если нужно сохранять строки с пустым PK
             prepared.append(d)
-        
+
         logger.info("[pull_upsert] table=%s prepared=%d skipped_empty_pk=%d", table, len(prepared), skipped_empty_pk)
 
         if not prepared:

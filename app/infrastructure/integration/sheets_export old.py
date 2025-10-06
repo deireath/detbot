@@ -50,19 +50,9 @@ async def push_full(conn: AsyncConnection, client: gspread.Client, spreadsheet_i
         clear_sheet(ws)
     write_rows_full(ws, header, values)
 
-
-
-async def push_partial(
-    conn: AsyncConnection,
-    client: gspread.Client,
-    spreadsheet_id: str,
-    worksheet_name: str,
-    select_sql: str,
-    key_cols: Sequence[str],
-    write_cols: Sequence[str],
-    append_missing: bool = True,
-    delete_missing: bool = False,   # <-- новая опция
-):
+# --- PUSH PARTIAL: обновить ТОЛЬКО указанные колонки по ключу; добавить новые при желании ---
+async def push_partial(conn: AsyncConnection, client: gspread.Client, spreadsheet_id: str, worksheet_name: str,
+                       select_sql: str, key_cols: Sequence[str], write_cols: Sequence[str], append_missing: bool = True):
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(select_sql)
         db_rows = await cur.fetchall()
@@ -77,14 +67,12 @@ async def push_partial(
     header = data[0]
     hmap = header_map(header)
 
-    # --- добиваем недостающие столбцы ---
+    # Добиваем недостающие столбцы (справа)
     needed = [*key_cols, *write_cols]
     added = False
     for col in needed:
         if col not in hmap:
-            header.append(col)
-            hmap[col] = len(header) - 1
-            added = True
+            header.append(col); hmap[col] = len(header) - 1; added = True
     if added:
         ensure_header(ws, header)
         width = len(header)
@@ -92,38 +80,30 @@ async def push_partial(
         if body:
             ws.update(f"2:{len(body)+1}", body)
 
-    # --- индекс по ключу ---
+    # Индекс в листе: (k1,k2,...) -> row_number
     def key_tuple(row: Sequence[str]) -> tuple:
-        return tuple(
-            (row[hmap[k]].strip() if k in hmap and hmap[k] < len(row) else "")
-            for k in key_cols
-        )
+        return tuple((row[hmap[k]].strip() if k in hmap and hmap[k] < len(row) else "") for k in key_cols)
 
-    sheet_index = {}
+    index = {}
     for i, row in enumerate(data[1:], start=2):
         if len(row) < len(header):
             row = row + [""] * (len(header) - len(row))
             data[i-1] = row
-        sheet_index[key_tuple(row)] = i
+        index[key_tuple(row)] = i
 
-    db_index = {
-        tuple(str(d.get(k, "") if d.get(k) is not None else "") for k in key_cols): d
-        for d in db_rows
-    }
-
+    # Готовим обновления
     from collections import defaultdict
-    updates = defaultdict(list)
+    updates = defaultdict(list)  # row -> [(col_idx, value)]
     appends = []
 
-    # --- обновляем/добавляем ---
-    for key, d in db_index.items():
-        if key in sheet_index:
-            r = sheet_index[key]
+    for d in db_rows:
+        key = tuple(str(d.get(k, "") if d.get(k) is not None else "") for k in key_cols)
+        if key in index:
+            r = index[key]
             row = data[r-1]
             for col in write_cols:
-                c = hmap[col] + 1
-                val = d.get(col)
-                val = "" if val is None else str(val)
+                c = hmap[col] + 1  # 1-based
+                val = d.get(col); val = "" if val is None else str(val)
                 updates[r].append((c, val))
         else:
             if append_missing:
@@ -134,7 +114,6 @@ async def push_partial(
                     new_row[hmap[c]] = str(d.get(c, "") if d.get(c) is not None else "")
                 appends.append(new_row)
 
-    # --- применяем апдейты ---
     for r, cols in updates.items():
         min_c = min(c for c, _ in cols)
         max_c = max(c for c, _ in cols)
@@ -147,14 +126,6 @@ async def push_partial(
         rng = gspread.utils.rowcol_to_a1(r, min_c) + ':' + gspread.utils.rowcol_to_a1(r, max_c)
         ws.update(rng, [row_copy[min_c-1:max_c]])
 
-    # --- удаляем лишние строки ---
-    if delete_missing:
-        extra_keys = set(sheet_index.keys()) - set(db_index.keys())
-        if extra_keys:
-            rows_to_delete = sorted([sheet_index[k] for k in extra_keys], reverse=True)
-            for r in rows_to_delete:
-                ws.delete_rows(r)
-    # --- добавляем новые ---
     if appends:
         for chunk in _chunks(appends, 500):
             start_row = len(data) + 1
@@ -162,4 +133,3 @@ async def push_partial(
             rng = gspread.utils.rowcol_to_a1(start_row, 1) + ':' + gspread.utils.rowcol_to_a1(end_row, len(header))
             ws.update(rng, chunk)
             data.extend(chunk)
-

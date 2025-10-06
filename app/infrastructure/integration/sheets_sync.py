@@ -42,8 +42,9 @@ async def sync_all(pg_pool):
             key = e["key"]
             write_cols = e["write_columns"]
             append_missing = bool(e.get("append_missing", True))
+            delete_missing = bool(e.get("delete_missing", False))
             async with pg_pool.connection() as conn:
-                await push_partial(conn, client, spreadsheet_id, worksheet, select_sql, key, write_cols, append_missing)
+                await push_partial(conn, client, spreadsheet_id, worksheet, select_sql, key, write_cols, append_missing, delete_missing)
             results.append(("push_partial", worksheet or "sheet1", "ok"))
 
         elif mode == "pull_upsert":

@@ -40,7 +40,8 @@
         "key": ["team"],
         "select_sql":"SELECT team, user_id, clue FROM public.teams",
         "write_columns": ["team", "user_id", "clue"],
-        "append_missing": true
+        "append_missing": true,
+        "delete_missing": true
 }
     ]
 }

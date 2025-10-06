@@ -12,7 +12,41 @@ admin_router = Router()
 
 admin_router.message.filter(UserRoleFilter(UserRole.ADMIN))
 
+@admin_router.message(Command('start'))
+async def admin_start_command(message: Message):
+    await message.answer(text='admin start')
+
+
 @admin_router.message(Command('help'))
-async def process_admin_help_command(message: Message):
+async def admin_help_command(message: Message):
     await message.answer(text='admin help')
 
+@admin_router.message(Command("visits"))
+async def show_team_visits(message: Message, redis):
+    args = message.text.split()
+    if len(args) != 2 or not args[1].isdigit():
+        await message.answer('Неправильно, попробуй /visits <номер команды>')
+        return
+    team = int(args[1])
+    visit_key = f"team:{team}:visited"
+
+    visited = await redis.smembers(visit_key)
+    if not visited:
+        await message.answer("Команда ничего не посетила")
+        return
+    visited_places = [place for place in visited]
+    text = f"Команда {team} посетила:\n" + "\n".join(visited_places)
+    await message.answer(text=text)
+
+@admin_router.message(Command("delete_visits"))
+async def delete_visits(message: Message, redis):
+    args = message.text.split()
+    if len(args) != 2 or not args[1].isdigit():
+        await message.answer('Неправильно, попробуй /visits <номер команды>')
+        return
+    
+    team = int(args[1])
+    visit_key = f"team:{team}:visited"
+
+    await redis.delete(visit_key)
+    await message.answer(f"Вот и все, история команды {team} сброшена")

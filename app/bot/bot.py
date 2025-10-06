@@ -5,8 +5,10 @@ from contextlib import suppress
 import psycopg_pool
 from redis.asyncio import Redis
 from aiogram import Bot, Dispatcher
+from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.redis import RedisStorage
+from app.bot.middlewares.redis_storage import RedisMiddleware
 from config.config import Config
 from app.bot.handlers.admin import admin_router
 from app.bot.handlers.user import user_router
@@ -44,18 +46,18 @@ async def _periodic_worker(
 
 async def main(config: Config) -> None:
     logger.info('Starting bot...')
-
-    storage = RedisStorage(
-        redis=Redis(
+    redis=Redis(
             host=config.redis.host,     
             port=config.redis.port,
             db=config.redis.db,
             password=config.redis.password,
             username=config.redis.username,
+            decode_responses=True,
         )
-    )
+    storage = RedisStorage(redis=redis)
 
-    bot = Bot(token=config.bot.token)
+    bot = Bot(token=config.bot.token,
+              default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher(storage=storage)
 
     db_pool: psycopg_pool.AsyncConnectionPool = await get_pg_pool(
@@ -65,6 +67,7 @@ async def main(config: Config) -> None:
         user=config.db.user,
         password=config.db.password,
     )
+    admin_pass = config.bot.admin_pass
 
     logger.info('Including routers...')
     dp.include_router(registration_router)
@@ -74,6 +77,7 @@ async def main(config: Config) -> None:
 
     logger.info('Including middlewares...')
     dp.update.middleware(DataBaseMiddleware())
+    dp.update.middleware(RedisMiddleware(storage.redis))
 
     sync_task: asyncio.Task | None = None
     import_task: asyncio.Task | None = None
@@ -104,6 +108,7 @@ async def main(config: Config) -> None:
         await dp.start_polling(
             bot,
             db_pool=db_pool,
+            admin_pass=admin_pass
         )
     except Exception as e:
         logger.exception(e)
@@ -114,4 +119,10 @@ async def main(config: Config) -> None:
                 with suppress(asyncio.CancelledError):
                     await task
         await db_pool.close()
+        await dp.storage.close()
+        try:
+            await redis.aclose()
+        except AttributeError:
+            await redis.close()
+            await redis.connection_pool.disconnect()
         logger.info("Connection to Postgres closed")

@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 @dataclass
 class BotSettings:
     token: str
-    admin_ids: list[int]
     admin_pass: int
 
 @dataclass
@@ -72,13 +71,7 @@ def load_config(path: str | None = None) -> Config:
 
     if not token:
         raise ValueError("BOT_TOKEN must not be empty")
-    
-    raw_ids = env.list("ADMIN_IDS", default =[])
 
-    try:
-        admin_ids = [int(x) for x in raw_ids]
-    except ValueError as e:
-        raise ValueError(f"ADMIN_IDS must be integers, got: {raw_ids}") from e
     
     sa_json_path = env("SA_JSON_PATH")
     
@@ -119,11 +112,10 @@ def load_config(path: str | None = None) -> Config:
     logger.info("Configuration loaded successfully")
 
     return Config(
-        bot=BotSettings(token=token, admin_ids=admin_ids, admin_pass=admin_pass),
+        bot=BotSettings(token=token, admin_pass=admin_pass),
         db=db,
         redis=redis,
         log=logg_settings,
         google=google,
         sheets=sheets
     )
-    

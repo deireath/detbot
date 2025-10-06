@@ -63,14 +63,14 @@ async def main():
                             CREATE TABLE IF NOT EXISTS teams(
                             id SERIAL PRIMARY KEY,
                             user_id BIGINT NOT NULL UNIQUE,
-                            team INT,
+                            team INT NOT NULL UNIQUE,
                             role VARCHAR(30),
                             travels INT,
                             clue INT
                             );
                         """
                     )
-                logger.info("Table 'user' were successfully created")
+                logger.info("Tables 'user, teams and places' were successfully created")
     except Error as db_error:
         logger.exception("Database-specific error: %s", db_error)
     except Exception as e:
