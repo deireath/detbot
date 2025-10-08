@@ -3,7 +3,8 @@ from operator import imod
 from typing import Any
 
 from aiogram import Router, F, Bot
-from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.enums import BotCommandScopeType
+from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, BotCommandScopeChat
 from aiogram.filters import CommandStart, StateFilter, Command
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.fsm.context import FSMContext
@@ -14,6 +15,7 @@ from psycopg import AsyncConnection
 from app.bot.filters.filters import UnregisteredUserFilter
 from app.bot.enums.roles import UserRole
 from app.bot.keyboards.keyboards import reg_kb
+from app.bot.keyboards.menu_button import get_main_menu_command
 from app.bot.states.states import RegState
 from app.infrastructure.database.db import add_team, add_user
 
@@ -42,7 +44,7 @@ async def admin_registration_starting(callback: CallbackQuery, state: FSMContext
     await callback.answer()
 
 @registration_router.message(StateFilter(RegState.admin_pass))
-async def admin_pass_verification(message: Message, state: FSMContext, admin_pass: int, conn: AsyncConnection):
+async def admin_pass_verification(message: Message, state: FSMContext, admin_pass: int, conn: AsyncConnection, bot: Bot):
     if message.text == str(admin_pass):
         await message.answer("Пароль верный, регистрация успешна")
         user_role = UserRole.ADMIN
@@ -51,6 +53,13 @@ async def admin_pass_verification(message: Message, state: FSMContext, admin_pas
             user_id=message.from_user.id,
             username=message.from_user.username,
             role=user_role
+        )
+        await bot.set_my_commands(
+            commands=get_main_menu_command(user_role=user_role),
+            scope=BotCommandScopeChat(
+                type=BotCommandScopeType.CHAT,
+                chat_id=message.from_user.id
+            )
         )
         await state.clear()
     else:
@@ -64,7 +73,7 @@ async def user_registration_starting(callback: CallbackQuery, state: FSMContext)
     await callback.answer()
 
 @registration_router.message(StateFilter(RegState.user_team))
-async def user_team_verification(message: Message, state: FSMContext, conn: AsyncConnection):
+async def user_team_verification(message: Message, state: FSMContext, conn: AsyncConnection, bot: Bot):
     if not message.text.isdigit():
         await message.answer("Введите только номер команды плиз")
         return
@@ -86,5 +95,12 @@ async def user_team_verification(message: Message, state: FSMContext, conn: Asyn
         username=message.from_user.username,
         role=user_role
     )
+    await bot.set_my_commands(
+            commands=get_main_menu_command(user_role=user_role),
+            scope=BotCommandScopeChat(
+                type=BotCommandScopeType.CHAT,
+                chat_id=message.from_user.id
+            )
+        )
     await message.answer(f"Регистрация команды {team_number} успешна")
     await state.clear()

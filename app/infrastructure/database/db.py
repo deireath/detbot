@@ -209,3 +209,12 @@ async def add_clue(conn: AsyncConnection, team: int):
                             SET clue = COALESCE(clue, 0) + 1
                             WHERE team = %s;
                         """, (team,))
+
+async def delete_team(conn: AsyncConnection, team: int):
+    async with conn.cursor() as cursor:
+        await cursor.execute("""
+                            DELETE FROM teams
+                            WHERE team = %s;
+                        """, (team,))
+        deleted_count = cursor.rowcount
+        return deleted_count > 0
