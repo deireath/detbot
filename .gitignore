@@ -2,6 +2,7 @@
 config/ogonek-473108-8c3109b45fd1.json
 
 media/
+venv/
 .venv/
 .vscode/
 __pycache__/
