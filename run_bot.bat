@@ -1,6 +1,7 @@
 @echo off
+python -m venv venv
 call venv\Scripts\activate
-
-python -m migrations.create_tables
-python -m main
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+echo Виртуальное окружение готово!
 pause
