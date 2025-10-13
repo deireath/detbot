@@ -8,6 +8,10 @@ def get_main_menu_command(user_role: UserRole):
             BotCommand(
                 command='/start',
                 description='Посмотреть категории и районы'
+            ),
+            BotCommand(
+                command='/answer',
+                description='Дать ответ'
             )
         ]
     elif user_role == UserRole.ADMIN:
@@ -19,6 +23,10 @@ def get_main_menu_command(user_role: UserRole):
             BotCommand(
                 command='/visits',
                 description='Посмотреть посещенные командой места /visits <номер команды>'
+            ),
+            BotCommand(
+                command='/all',
+                description='Написать всем'
             ),
             BotCommand(
                 command='/delete_visits',

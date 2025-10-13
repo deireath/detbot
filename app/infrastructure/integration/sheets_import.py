@@ -63,6 +63,7 @@ async def import_all_from_config(pg_pool) -> list[tuple[str, int]]:
         pk: list[str] = s["pk"]
         col_map: dict[str, str] = s.get("columns", {})
         casts: dict[str, str] = s.get("casts", {})
+        delete_missing = s.get("delete_missing", False)
 
         # получаем все значения из листа
         values = await loop.run_in_executor(None, lambda: fetch_values(client, spreadsheet_id, worksheet, rng))
@@ -103,5 +104,32 @@ async def import_all_from_config(pg_pool) -> list[tuple[str, int]]:
         async with pg_pool.connection() as conn:
             n = await bulk_upsert(conn, table, prepared, pk)
         results.append((table, n))
+        
+        if delete_missing:
+            if not prepared:
+                logger.info("[pull_upsert] delete_missing requested but prepared is empty — skipping delete")
+            else:
+                pk_cols = pk
+                values_parts = []
+                params: list = []
+                for row in prepared:
+                    placeholders = "(" + ",".join(["%s"] * len(pk_cols)) + ")"
+                    values_parts.append(placeholders)
+                    for col in pk_cols:
+                        params.append(row.get(col))
+                values_clause = ",".join(values_parts)
+                cols_list = ", ".join(pk_cols)
+                join_cond = " AND ".join([f"v.{c}::text = t.{c}::text" for c in pk_cols])
+                delete_sql = f"""
+                    DELETE FROM {table} t
+                    WHERE NOT EXISTS (
+                       SELECT 1 FROM (VALUES {values_clause}) AS v({cols_list})
+                        WHERE {join_cond}
+                    )
+                """
+
+                async with conn.cursor() as cur:
+                    await cur.execute(delete_sql, tuple(params))
+                logger.info("[pull_upsert] delete_missing applied for table %s", table)
 
     return results

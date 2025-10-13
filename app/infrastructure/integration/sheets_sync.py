@@ -64,3 +64,4 @@ async def sync_all(pg_pool):
             results.append((mode, e.get("worksheet"), "unknown_mode"))
 
     return results
+    

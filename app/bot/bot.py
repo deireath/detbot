@@ -28,10 +28,13 @@ async def _periodic_worker(
     coro,
     name: str,
 ):
+    loop = asyncio.get_event_loop()
+    def run_in_thread():
+        asyncio.run(coro(pool))
 
     while True:
         try:
-            await coro(pool)
+            await asyncio.to_thread(run_in_thread)
             logger.info("[%s] tick done", name)
         except Exception:
             logger.exception("[%s] tick failed", name)

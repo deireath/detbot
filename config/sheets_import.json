@@ -6,6 +6,7 @@
       "range": "A:Z",
       "table": "public.places",
       "pk": ["district", "number"],
+      "delete_missing": true,
       "columns": {
         "tag": "tag",
         "district": "district",

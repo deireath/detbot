@@ -15,6 +15,7 @@
         "range": "A:Z",
         "table": "public.places",
         "pk": ["district", "number"],
+        "delete_missing": true,
         "columns": {
             "tag": "tag",
             "district": "district",
@@ -38,8 +39,8 @@
         "worksheet": "Sheet3",
         "table": "teams",
         "key": ["team"],
-        "select_sql":"SELECT team, user_id, clue FROM public.teams",
-        "write_columns": ["team", "user_id", "clue"],
+        "select_sql":"SELECT team, user_id, text, clue FROM public.teams",
+        "write_columns": ["team", "user_id", "text", "clue"],
         "append_missing": true,
         "delete_missing": true
 }

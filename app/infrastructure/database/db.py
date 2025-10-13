@@ -119,6 +119,13 @@ async def get_admins(conn: AsyncConnection):
         admins = [row[0] for row in rows]
         return admins
 
+async def get_users(conn: AsyncConnection):
+    async with conn.cursor() as cursor:
+        data  = await cursor.execute("SELECT user_id FROM teams WHERE role = 'user'")
+        rows = await data.fetchall()
+        users = [row[0] for row in rows]
+        return users
+
 async def get_tags(conn: AsyncConnection):
     async with conn.cursor() as cursor:
         data = await cursor.execute(
@@ -187,10 +194,21 @@ async def get_team_by_user(conn: AsyncConnection, user_id: int):
             query="""
                 SELECT team
                 FROM teams
-                WHERE user_id = %(user_id)s
+                WHERE user_id = %(user_id)s;
             """,
             params={"user_id": user_id,}
         )
+        row = await data.fetchone()
+        return row
+
+async def get_user_by_team(conn: AsyncConnection, team: int):
+    async with conn.cursor() as cursor:
+        data = await cursor.execute(
+            """
+                SELECT user_id
+                FROM teams
+                WHERE team = %s;
+            """, (team,))
         row = await data.fetchone()
         return row
 
@@ -211,10 +229,30 @@ async def add_clue(conn: AsyncConnection, team: int):
                         """, (team,))
 
 async def delete_team(conn: AsyncConnection, team: int):
+    user_row = await get_user_by_team(conn, team)
+    user_id = user_row[0] if user_row else None
+
     async with conn.cursor() as cursor:
         await cursor.execute("""
                             DELETE FROM teams
                             WHERE team = %s;
                         """, (team,))
         deleted_count = cursor.rowcount
+        if deleted_count and user_id:
+            await cursor.execute(
+                """
+                    DELETE FROM users 
+                    WHERE user_id = %s;
+            """, (user_id,)
+            )
         return deleted_count > 0
+    
+async def add_answer(conn: AsyncConnection, text: str, user_id: int):
+    async with conn.cursor() as cursor:
+        await cursor.execute("""
+                            UPDATE teams
+                            SET text = %s
+                            WHERE user_id = %s;
+                        """, (text, user_id)
+        )
+        return cursor.rowcount > 0

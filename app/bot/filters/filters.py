@@ -58,13 +58,18 @@ def normalize_district(raw: str) -> str:
     return s
 
 def parse_location(text: str) -> tuple[str,int] | None:
+    text = text.strip().translate(LAT_TO_CYR)
+    text = re.sub(r"[–—−]", "-", text)
+    text = re.sub(r"([A-Za-zА-Яа-яЁё]+)\s+([0-9]+)", r"\1-\2", text)
+
     PATTERN = re.compile(
-    r'^\s*([A-Za-zА-Яа-яЁё]{1,3})\s*[-–—]\s*([0-9]{1,3})\s*$',
-    re.IGNORECASE
-)
+        r'^\s*([A-Za-zА-Яа-яЁё]{1,3})\s*-\s*([0-9]{1,3})\s*$',
+        re.IGNORECASE
+    )
     m = PATTERN.match(text)
     if not m:
         return None
+
     district_raw, num_raw = m.group(1), m.group(2)
     district = normalize_district(district_raw)
     number = int(num_raw)

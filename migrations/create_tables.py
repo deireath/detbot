@@ -66,7 +66,8 @@ async def main():
                             team INT NOT NULL UNIQUE,
                             role VARCHAR(30),
                             travels INT,
-                            clue INT
+                            clue INT,
+                            text TEXT
                             );
                         """
                     )

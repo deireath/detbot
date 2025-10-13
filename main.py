@@ -12,6 +12,9 @@ logging.basicConfig(
     level=logging.getLevelName(level=config.log.level),
     format=config.log.format,
 )
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
+logging.getLogger("googleapiclient.discovery").setLevel(logging.WARNING)
 
 if sys.platform.startswith("win") or os.name == "nt":
     print(sys.platform)
