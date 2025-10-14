@@ -1,17 +1,25 @@
 @echo off
-setlocal
+setlocal ENABLEEXTENSIONS
 chcp 65001 >nul
-REM перейти в папку скрипта (важно при двойном клике)
 cd /d "%~dp0"
 
-echo [RUN] docker compose up -d --build
-docker compose up -d --build
+call :run docker compose version || goto :fail
+call :run docker compose up -d --build || goto :fail
 
 echo.
-echo [LOGS] tailing bot logs (Ctrl+C to stop viewing logs; бот продолжит работать)...
-docker compose logs -f bot
+echo [LOGS] tailing bot logs (Ctrl+C to stop)...
+call :run docker compose logs -f bot
+goto :end
 
+:run
 echo.
-echo [DONE] Logs stream stopped. Containers are still running.
+echo ^> %*
+%*
+exit /b %ERRORLEVEL%
+
+:fail
+echo.
+echo *** FAILED. See message above. ***
 pause
+:end
 endlocal
