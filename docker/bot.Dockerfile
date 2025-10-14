@@ -20,5 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app
 
 # 3) Точка входа — скрипт, который запустит миграции и бота
-RUN chmod +x /app/docker/entrypoint.sh
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
+
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
