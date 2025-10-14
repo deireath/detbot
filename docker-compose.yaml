@@ -75,8 +75,10 @@ services:
         max-size: "10m"
         max-file: "5"
         compress: "true"
+    networks:
+      - app_network
   
-    bot:
+  bot:
     build:
       context: .
       dockerfile: docker/bot.Dockerfile
@@ -90,7 +92,7 @@ services:
         condition: service_healthy
     networks:
       - app_network
-    restart: unless-stopped
+    restart: unless-stopped  
     
 networks:
   app_network:
