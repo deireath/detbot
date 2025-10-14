@@ -75,7 +75,23 @@ services:
         max-size: "10m"
         max-file: "5"
         compress: "true"
-        
+  
+    bot:
+    build:
+      context: .
+      dockerfile: docker/bot.Dockerfile
+    container_name: bot
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app_network
+    restart: unless-stopped
+    
 networks:
   app_network:
     name: app_network
