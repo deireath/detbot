@@ -72,10 +72,10 @@ async def get_user_role(
         params=(user_id,),
         )
         row = await data.fetchone()
-    if row:
-        logger.info("The user with `user_id`=%s has the role is %s", user_id, row[0])
-    else:
-        logger.warning("No user with `user_id`=%s found in the database", user_id)
+    # if row:
+    #     logger.info("The user with `user_id`=%s has the role is %s", user_id, row[0])
+    # else:
+    #     logger.warning("No user with `user_id`=%s found in the database", user_id)
     return UserRole(row[0]) if row else None
 
 async def add_team(

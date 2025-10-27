@@ -9,4 +9,4 @@ echo "[bot] Running migrations..."
 python -m migrations.create_tables
 
 echo "[bot] Starting bot..."
-exec python -m app.main
+exec python -m main

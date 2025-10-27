@@ -38,7 +38,7 @@ def get_main_menu_command(user_role: UserRole):
             ),
             BotCommand(
                 command='/delete_team',
-                description='Удалить НАХУЙ команду /delete_team <номер команды>'
+                description='Удалить команду /delete_team <номер команды>'
             )
 
         ]
